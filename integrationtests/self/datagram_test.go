@@ -37,6 +37,99 @@ func TestDatagramNegotiation(t *testing.T) {
 	})
 }
 
+func TestDatagramNegotiationWithOmittedClientTransportParameter(t *testing.T) {
+	const maxDatagramFrameSize = 1200
+
+	t.Run("server assumes omitted client support", func(t *testing.T) {
+		server, err := quic.Listen(
+			newUDPConnLocalhost(t),
+			getTLSConfig(),
+			getQuicConfig(&quic.Config{
+				EnableDatagrams:                true,
+				MaxDatagramFrameSize:           maxDatagramFrameSize,
+				AssumePeerMaxDatagramFrameSize: maxDatagramFrameSize,
+			}),
+		)
+		require.NoError(t, err)
+		defer server.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		clientConn, err := quic.Dial(
+			ctx,
+			newUDPConnLocalhost(t),
+			server.Addr(),
+			getTLSClientConfig(),
+			getQuicConfig(&quic.Config{
+				EnableDatagrams:          true,
+				MaxDatagramFrameSize:     maxDatagramFrameSize,
+				OmitMaxDatagramFrameSize: true,
+			}),
+		)
+		require.NoError(t, err)
+		defer clientConn.CloseWithError(0, "")
+
+		serverConn, err := server.Accept(ctx)
+		require.NoError(t, err)
+		defer serverConn.CloseWithError(0, "")
+
+		require.Equal(t, struct{ Remote, Local bool }{Remote: true, Local: true}, serverConn.ConnectionState().SupportsDatagrams)
+		require.Equal(t, struct{ Remote, Local bool }{Remote: true, Local: true}, clientConn.ConnectionState().SupportsDatagrams)
+
+		require.NoError(t, serverConn.SendDatagram([]byte("foo")))
+		datagram, err := clientConn.ReceiveDatagram(ctx)
+		require.NoError(t, err)
+		require.Equal(t, []byte("foo"), datagram)
+
+		require.NoError(t, clientConn.SendDatagram([]byte("bar")))
+		datagram, err = serverConn.ReceiveDatagram(ctx)
+		require.NoError(t, err)
+		require.Equal(t, []byte("bar"), datagram)
+	})
+
+	t.Run("standard server rejects omitted client support", func(t *testing.T) {
+		server, err := quic.Listen(
+			newUDPConnLocalhost(t),
+			getTLSConfig(),
+			getQuicConfig(&quic.Config{
+				EnableDatagrams:      true,
+				MaxDatagramFrameSize: maxDatagramFrameSize,
+			}),
+		)
+		require.NoError(t, err)
+		defer server.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		clientConn, err := quic.Dial(
+			ctx,
+			newUDPConnLocalhost(t),
+			server.Addr(),
+			getTLSClientConfig(),
+			getQuicConfig(&quic.Config{
+				EnableDatagrams:          true,
+				MaxDatagramFrameSize:     maxDatagramFrameSize,
+				OmitMaxDatagramFrameSize: true,
+			}),
+		)
+		require.NoError(t, err)
+		defer clientConn.CloseWithError(0, "")
+
+		serverConn, err := server.Accept(ctx)
+		require.NoError(t, err)
+		defer serverConn.CloseWithError(0, "")
+
+		require.Equal(t, struct{ Remote, Local bool }{Remote: false, Local: true}, serverConn.ConnectionState().SupportsDatagrams)
+		require.Equal(t, struct{ Remote, Local bool }{Remote: true, Local: true}, clientConn.ConnectionState().SupportsDatagrams)
+
+		require.Error(t, serverConn.SendDatagram([]byte("foo")))
+		require.NoError(t, clientConn.SendDatagram([]byte("bar")))
+		datagram, err := serverConn.ReceiveDatagram(ctx)
+		require.NoError(t, err)
+		require.Equal(t, []byte("bar"), datagram)
+	})
+}
+
 func testDatagramNegotiation(t *testing.T, serverEnableDatagram, clientEnableDatagram bool) {
 	server, err := quic.Listen(
 		newUDPConnLocalhost(t),

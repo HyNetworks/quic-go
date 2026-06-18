@@ -17,7 +17,7 @@ func TestDial(t *testing.T) {
 		testDial(t,
 			func(ctx context.Context, addr net.Addr) error {
 				conn := newUDPConnLocalhost(t)
-				_, err := Dial(ctx, conn, addr, &tls.Config{}, nil)
+				_, err := Dial(ctx, conn, addr, &tls.Config{InsecureSkipVerify: true}, nil)
 				return err
 			},
 			false,
@@ -28,7 +28,7 @@ func TestDial(t *testing.T) {
 		testDial(t,
 			func(ctx context.Context, addr net.Addr) error {
 				conn := newUDPConnLocalhost(t)
-				_, err := DialEarly(ctx, conn, addr, &tls.Config{}, nil)
+				_, err := DialEarly(ctx, conn, addr, &tls.Config{InsecureSkipVerify: true}, nil)
 				return err
 			},
 			false,
@@ -38,7 +38,7 @@ func TestDial(t *testing.T) {
 	t.Run("DialAddr", func(t *testing.T) {
 		testDial(t,
 			func(ctx context.Context, addr net.Addr) error {
-				_, err := DialAddr(ctx, addr.String(), &tls.Config{}, nil)
+				_, err := DialAddr(ctx, addr.String(), &tls.Config{InsecureSkipVerify: true}, nil)
 				return err
 			},
 			true,
@@ -48,7 +48,7 @@ func TestDial(t *testing.T) {
 	t.Run("DialAddrEarly", func(t *testing.T) {
 		testDial(t,
 			func(ctx context.Context, addr net.Addr) error {
-				_, err := DialAddrEarly(ctx, addr.String(), &tls.Config{}, nil)
+				_, err := DialAddrEarly(ctx, addr.String(), &tls.Config{InsecureSkipVerify: true}, nil)
 				return err
 			},
 			true,

@@ -24,7 +24,7 @@ func runSysConnServer(t *testing.T, network string, addr *net.UDPAddr) (*net.UDP
 	require.NoError(t, err)
 	t.Cleanup(func() { udpConn.Close() })
 
-	oobConn, err := newConn(udpConn, true)
+	oobConn, err := newConn(udpConn, true, false)
 	require.NoError(t, err)
 	require.True(t, oobConn.capabilities().DF)
 
@@ -298,7 +298,7 @@ func TestReadsMultipleMessagesInOneBatch(t *testing.T) {
 	bc := &mockBatchConn{t: t, numMsgRead: batchSize/2 + 1}
 
 	udpConn := newUDPConnLocalhost(t)
-	oobConn, err := newConn(udpConn, true)
+	oobConn, err := newConn(udpConn, true, false)
 	require.NoError(t, err)
 	oobConn.batchConn = bc
 
@@ -314,7 +314,7 @@ func TestNewConnWithoutNetConn(t *testing.T) {
 	udpConn := newUDPConnLocalhost(t)
 	conn := struct{ OOBCapablePacketConn }{udpConn}
 
-	_, err := newConn(conn, true)
+	_, err := newConn(conn, true, false)
 	require.EqualError(t, err, "quic: OOBCapablePacketConn must implement net.Conn or ReadBatch")
 }
 
@@ -326,7 +326,7 @@ func TestSysConnSendGSO(t *testing.T) {
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0})
 	require.NoError(t, err)
 	c := &oobRecordingConn{UDPConn: udpConn}
-	oobConn, err := newConn(c, true)
+	oobConn, err := newConn(c, true, false)
 	require.NoError(t, err)
 	require.True(t, oobConn.capabilities().GSO)
 

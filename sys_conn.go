@@ -2,11 +2,7 @@ package quic
 
 import (
 	"io"
-	"log"
 	"net"
-	"os"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -53,32 +49,14 @@ type OOBCapablePacketConn interface {
 
 var _ OOBCapablePacketConn = &net.UDPConn{}
 
-func wrapConn(pc net.PacketConn) (rawConn, error) {
-	if err := setReceiveBuffer(pc); err != nil {
-		if !strings.Contains(err.Error(), "use of closed network connection") {
-			setBufferWarningOnce.Do(func() {
-				if disable, _ := strconv.ParseBool(os.Getenv("QUIC_GO_DISABLE_RECEIVE_BUFFER_WARNING")); disable {
-					return
-				}
-				log.Printf("%s. See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.", err)
-			})
-		}
-	}
-	if err := setSendBuffer(pc); err != nil {
-		if !strings.Contains(err.Error(), "use of closed network connection") {
-			setBufferWarningOnce.Do(func() {
-				if disable, _ := strconv.ParseBool(os.Getenv("QUIC_GO_DISABLE_RECEIVE_BUFFER_WARNING")); disable {
-					return
-				}
-				log.Printf("%s. See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.", err)
-			})
-		}
-	}
+func wrapConn(pc net.PacketConn, disableGSO bool) (rawConn, error) {
+	_ = setReceiveBuffer(pc)
+	_ = setSendBuffer(pc)
 
 	conn, ok := pc.(interface {
 		SyscallConn() (syscall.RawConn, error)
 	})
-	var supportsDF bool
+	var supportsDF bool = true
 	if ok {
 		rawConn, err := conn.SyscallConn()
 		if err != nil {
@@ -99,7 +77,7 @@ func wrapConn(pc net.PacketConn) (rawConn, error) {
 		utils.DefaultLogger.Infof("PacketConn is not a net.UDPConn. Disabling optimizations possible on UDP connections.")
 		return &basicConn{PacketConn: pc, supportsDF: supportsDF}, nil
 	}
-	return newConn(c, supportsDF)
+	return newConn(c, supportsDF, disableGSO)
 }
 
 // The basicConn is the most trivial implementation of a rawConn.
@@ -121,6 +99,7 @@ func (c *basicConn) ReadPacket() (receivedPacket, error) {
 	buffer.Data = buffer.Data[:protocol.MaxPacketBufferSize]
 	n, addr, err := c.ReadFrom(buffer.Data)
 	if err != nil {
+		buffer.Release()
 		return receivedPacket{}, err
 	}
 	return receivedPacket{

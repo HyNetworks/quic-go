@@ -1082,7 +1082,7 @@ func TestHTTPStreamer(t *testing.T) {
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://localhost:%d/httpstreamer", port), nil)
 	require.NoError(t, err)
-	tlsConf := getTLSClientConfigWithoutServerName()
+	tlsConf := getTLSClientConfig()
 	tlsConf.NextProtos = []string{http3.NextProtoH3}
 	ctx := t.Context()
 	conn, err := quic.Dial(ctx, newUDPConnLocalhost(t), &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: port}, tlsConf, getQuicConfig(nil))

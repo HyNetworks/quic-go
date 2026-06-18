@@ -94,6 +94,10 @@ type TransportParameters struct {
 	MaxDatagramFrameSize protocol.ByteCount // RFC 9221
 	EnableResetStreamAt  bool               // https://datatracker.ietf.org/doc/draft-ietf-quic-reliable-stream-reset/09/
 	MinAckDelay          *time.Duration
+
+	// ChromeFingerprint makes Marshal encode the parameters the way Google
+	// Chrome does. Client side only; see marshalChrome.
+	ChromeFingerprint bool
 }
 
 // Unmarshal the transport parameters
@@ -356,6 +360,10 @@ func (p *TransportParameters) readNumericTransportParameter(b []byte, paramID tr
 
 // Marshal the transport parameters
 func (p *TransportParameters) Marshal(pers protocol.Perspective) []byte {
+	if p.ChromeFingerprint && pers == protocol.PerspectiveClient {
+		return p.marshalChrome()
+	}
+
 	// Typical Transport Parameters consume around 110 bytes, depending on the exact values,
 	// especially the lengths of the Connection IDs.
 	// Allocate 256 bytes, so we won't have to grow the slice in any case.

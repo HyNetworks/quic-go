@@ -59,7 +59,7 @@ type serverOpts struct {
 
 func newTestServer(t *testing.T, serverOpts *serverOpts) *testServer {
 	t.Helper()
-	c, err := wrapConn(newUDPConnLocalhost(t))
+	c, err := wrapConn(newUDPConnLocalhost(t), false)
 	require.NoError(t, err)
 	verifySourceAddress := func(net.Addr) bool { return serverOpts.useRetry }
 	config := populateConfig(serverOpts.config)

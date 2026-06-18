@@ -104,6 +104,25 @@ func populateConfig(config *Config) *Config {
 	if initialPacketSize == 0 {
 		initialPacketSize = protocol.InitialPacketSize
 	}
+	enableDatagrams := config.EnableDatagrams
+	omitMaxDatagramFrameSize := config.OmitMaxDatagramFrameSize
+	if config.ChromeParrot {
+		// Chrome always advertises DATAGRAM support, so enable it and never omit
+		// the transport parameter; leaving it out would be one parameter short of
+		// Chrome's set.
+		enableDatagrams = true
+		omitMaxDatagramFrameSize = false
+		// Chrome pins these, so anything the caller asked for is overridden.
+		idleTimeout = chromeMaxIdleTimeout
+		initialStreamReceiveWindow = chromeInitialMaxStreamData
+		initialConnectionReceiveWindow = chromeInitialMaxData
+		maxIncomingStreams = chromeMaxIncomingStreams
+		maxIncomingUniStreams = chromeMaxIncomingUniStreams
+		initialPacketSize = chromeInitialPacketSize
+		// The auto-tuning ceilings must not sit below the starting windows.
+		maxStreamReceiveWindow = max(maxStreamReceiveWindow, initialStreamReceiveWindow)
+		maxConnectionReceiveWindow = max(maxConnectionReceiveWindow, initialConnectionReceiveWindow)
+	}
 
 	return &Config{
 		GetConfigForClient:               config.GetConfigForClient,
@@ -119,11 +138,16 @@ func populateConfig(config *Config) *Config {
 		MaxIncomingStreams:               maxIncomingStreams,
 		MaxIncomingUniStreams:            maxIncomingUniStreams,
 		TokenStore:                       config.TokenStore,
-		EnableDatagrams:                  config.EnableDatagrams,
+		EnableDatagrams:                  enableDatagrams,
+		OmitMaxDatagramFrameSize:         omitMaxDatagramFrameSize,
+		AssumePeerMaxDatagramFrameSize:   config.AssumePeerMaxDatagramFrameSize,
 		InitialPacketSize:                initialPacketSize,
 		DisablePathMTUDiscovery:          config.DisablePathMTUDiscovery,
 		EnableStreamResetPartialDelivery: config.EnableStreamResetPartialDelivery,
 		Allow0RTT:                        config.Allow0RTT,
 		Tracer:                           config.Tracer,
+		MaxDatagramFrameSize:             config.MaxDatagramFrameSize,
+		DisablePathManager:               config.DisablePathManager,
+		ChromeParrot:                     config.ChromeParrot,
 	}
 }

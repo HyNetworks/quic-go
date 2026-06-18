@@ -33,5 +33,5 @@ func TestDatagramTooLargeError(t *testing.T) {
 		&DatagramTooLargeError{MaxDatagramPayloadSize: 1024},
 		&DatagramTooLargeError{MaxDatagramPayloadSize: 1025},
 	))
-	require.Equal(t, "DATAGRAM frame too large", (&DatagramTooLargeError{MaxDatagramPayloadSize: 1024}).Error())
+	require.Equal(t, "DATAGRAM frame too large (maximum: 1024 bytes)", (&DatagramTooLargeError{MaxDatagramPayloadSize: 1024}).Error())
 }

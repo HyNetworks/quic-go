@@ -32,7 +32,7 @@ func TestHTTPStreamErrors(t *testing.T) {
 				ctx,
 				newUDPConnLocalhost(t),
 				&net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: port},
-				http3.ConfigureTLSConfig(getTLSClientConfigWithoutServerName()),
+				http3.ConfigureTLSConfig(getTLSClientConfig()),
 				getQuicConfig(nil),
 			)
 			require.NoError(t, err)

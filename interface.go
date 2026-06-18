@@ -178,11 +178,33 @@ type Config struct {
 	Allow0RTT bool
 	// Enable QUIC datagram support (RFC 9221).
 	EnableDatagrams bool
+	// OmitMaxDatagramFrameSize omits the max_datagram_frame_size transport parameter,
+	// even when QUIC datagram support is enabled.
+	OmitMaxDatagramFrameSize bool
+	// AssumePeerMaxDatagramFrameSize treats peers that omit max_datagram_frame_size
+	// as supporting DATAGRAM frames up to this size. This is a non-standard extension.
+	AssumePeerMaxDatagramFrameSize int64
 	// Enable QUIC Stream Resets with Partial Delivery.
 	// See https://datatracker.ietf.org/doc/html/draft-ietf-quic-reliable-stream-reset-09.
 	EnableStreamResetPartialDelivery bool
 
 	Tracer func(ctx context.Context, isClient bool, connID ConnectionID) qlogwriter.Trace
+
+	MaxDatagramFrameSize int64
+
+	// DisablePathManager disables path manager.
+	// for hysteria2 port hopping, direct change remote address without connection migration logic
+	DisablePathManager bool
+
+	// ChromeParrot makes the client's QUIC handshake look like Google Chrome's.
+	// It overrides the flow control windows, stream limits, idle timeout and
+	// packet size with Chrome's values, encodes the transport parameters the way
+	// Chrome does (see wire.marshalChrome), and applies Chrome's chaos
+	// protection to the Initial packets.
+	//
+	// Client side only; it has no effect on a listener. Because it pins the
+	// values above, settings that conflict with Chrome's are ignored.
+	ChromeParrot bool
 }
 
 // ClientInfo contains information about an incoming connection attempt.

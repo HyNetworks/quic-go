@@ -22,7 +22,7 @@ func TestCryptoStreamManager(t *testing.T) {
 }
 
 func testCryptoStreamManager(t *testing.T, encLevel protocol.EncryptionLevel) {
-	initialStream := newInitialCryptoStream(true)
+	initialStream := newInitialCryptoStream(true, false)
 	handshakeStream := newCryptoStream()
 	oneRTTStream := newCryptoStream()
 	csm := newCryptoStreamManager(initialStream, handshakeStream, oneRTTStream)
@@ -58,7 +58,7 @@ func TestCryptoStreamManagerFinishEncryptionLevel(t *testing.T) {
 }
 
 func testCryptoStreamManagerFinishEncryptionLevel(t *testing.T, encLevel protocol.EncryptionLevel) {
-	initialStream := newInitialCryptoStream(true)
+	initialStream := newInitialCryptoStream(true, false)
 	handshakeStream := newCryptoStream()
 	oneRTTStream := newCryptoStream()
 	csm := newCryptoStreamManager(initialStream, handshakeStream, oneRTTStream)
@@ -71,7 +71,7 @@ func testCryptoStreamManagerFinishEncryptionLevel(t *testing.T, encLevel protoco
 }
 
 func TestCryptoStreamManagerPostHandshake(t *testing.T) {
-	initialStream := newInitialCryptoStream(true)
+	initialStream := newInitialCryptoStream(true, false)
 	handshakeStream := newCryptoStream()
 	oneRTTStream := newCryptoStream()
 	csm := newCryptoStreamManager(initialStream, handshakeStream, oneRTTStream)

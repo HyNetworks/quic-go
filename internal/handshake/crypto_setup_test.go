@@ -64,18 +64,20 @@ func TestErrorBeforeClientHelloGeneration(t *testing.T) {
 	tlsConf := testdata.GetTLSConfig()
 	tlsConf.InsecureSkipVerify = true
 	tlsConf.NextProtos = []string{""}
-	cl := NewCryptoSetupClient(
+	cl, err := NewCryptoSetupClient(
 		protocol.ConnectionID{},
 		&wire.TransportParameters{},
 		tlsConf,
+		false,
 		false,
 		utils.NewRTTStats(),
 		nil,
 		utils.DefaultLogger.WithPrefix("client"),
 		protocol.Version1,
 	)
+	require.NoError(t, err)
 
-	err := cl.StartHandshake(context.Background())
+	err = cl.StartHandshake(context.Background())
 	var terr *qerr.TransportError
 	require.ErrorAs(t, err, &terr)
 	require.Equal(t, uint64(0x100+0x50), uint64(terr.ErrorCode))
@@ -183,16 +185,18 @@ func handshakeWithTLSConf(
 	CryptoSetup /* server */, []Event /* more server events */, error, /* server error */
 ) {
 	t.Helper()
-	client := NewCryptoSetupClient(
+	client, err := NewCryptoSetupClient(
 		protocol.ConnectionID{},
 		clientTransportParameters,
 		clientConf,
 		enable0RTT,
+		false,
 		clientRTTStats,
 		nil,
 		utils.DefaultLogger.WithPrefix("client"),
 		protocol.Version1,
 	)
+	require.NoError(t, err)
 
 	if serverTransportParameters.StatelessResetToken == nil {
 		var token protocol.StatelessResetToken
@@ -282,16 +286,18 @@ func TestWithClientAuth(t *testing.T) {
 func TestTransportParameters(t *testing.T) {
 	clientConf, serverConf := getTLSConfigs()
 	cTransportParameters := &wire.TransportParameters{ActiveConnectionIDLimit: 2, MaxIdleTimeout: 42 * time.Second}
-	client := NewCryptoSetupClient(
+	client, err := NewCryptoSetupClient(
 		protocol.ConnectionID{},
 		cTransportParameters,
 		clientConf,
+		false,
 		false,
 		utils.NewRTTStats(),
 		nil,
 		utils.DefaultLogger.WithPrefix("client"),
 		protocol.Version1,
 	)
+	require.NoError(t, err)
 
 	var token protocol.StatelessResetToken
 	sTransportParameters := &wire.TransportParameters{

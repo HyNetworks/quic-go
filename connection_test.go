@@ -178,7 +178,7 @@ func newClientTestConnection(
 	if config == nil {
 		config = &Config{DisablePathMTUDiscovery: true}
 	}
-	conn := newClientConnection(
+	conn, err := newClientConnection(
 		context.Background(),
 		sendConn,
 		connRunner,
@@ -195,6 +195,7 @@ func newClientTestConnection(
 		utils.DefaultLogger,
 		protocol.Version1,
 	)
+	require.NoError(t, err)
 	require.Nil(t, conn.testHooks)
 	conn.packer = packer
 	for _, opt := range opts {

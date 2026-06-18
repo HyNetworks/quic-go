@@ -72,7 +72,10 @@ func TestConfigHandshakeIdleTimeout(t *testing.T) {
 	require.Equal(t, 11*time.Second, c.handshakeTimeout())
 }
 
-func configWithNonZeroNonFunctionFields(t *testing.T) *Config {
+// chromeParrot is set separately because, unlike every other field here, it
+// deliberately overrides other values in populateConfig. Callers that assert
+// populateConfig is idempotent must leave it off.
+func configWithNonZeroNonFunctionFields(t *testing.T, chromeParrot bool) *Config {
 	t.Helper()
 	c := &Config{}
 	v := reflect.ValueOf(c).Elem()
@@ -118,6 +121,14 @@ func configWithNonZeroNonFunctionFields(t *testing.T) *Config {
 			f.Set(reflect.ValueOf(time.Second))
 		case "EnableDatagrams":
 			f.Set(reflect.ValueOf(true))
+		case "OmitMaxDatagramFrameSize":
+			f.Set(reflect.ValueOf(true))
+		case "AssumePeerMaxDatagramFrameSize":
+			f.Set(reflect.ValueOf(int64(1337)))
+		case "MaxDatagramFrameSize":
+			f.Set(reflect.ValueOf(int64(1200)))
+		case "DisablePathManager":
+			f.Set(reflect.ValueOf(true))
 		case "DisableVersionNegotiationPackets":
 			f.Set(reflect.ValueOf(true))
 		case "InitialPacketSize":
@@ -128,6 +139,8 @@ func configWithNonZeroNonFunctionFields(t *testing.T) *Config {
 			f.Set(reflect.ValueOf(true))
 		case "EnableStreamResetPartialDelivery":
 			f.Set(reflect.ValueOf(true))
+		case "ChromeParrot":
+			f.Set(reflect.ValueOf(chromeParrot))
 		default:
 			t.Fatalf("all fields must be accounted for, but saw unknown field %q", fn)
 		}
@@ -156,7 +169,7 @@ func TestConfigClone(t *testing.T) {
 	})
 
 	t.Run("non-function fields", func(t *testing.T) {
-		c := configWithNonZeroNonFunctionFields(t)
+		c := configWithNonZeroNonFunctionFields(t, true)
 		require.Equal(t, c, c.Clone())
 	})
 
@@ -170,7 +183,7 @@ func TestConfigClone(t *testing.T) {
 
 func TestConfigDefaultValues(t *testing.T) {
 	// if set, the values should be copied
-	c := configWithNonZeroNonFunctionFields(t)
+	c := configWithNonZeroNonFunctionFields(t, false)
 	require.Equal(t, c, populateConfig(c))
 
 	// if not set, some fields use default values
@@ -196,4 +209,42 @@ func TestConfigZeroLimits(t *testing.T) {
 	c := populateConfig(config)
 	require.Zero(t, c.MaxIncomingStreams)
 	require.Zero(t, c.MaxIncomingUniStreams)
+}
+
+func TestConfigChromeParrotOverrides(t *testing.T) {
+	// ChromeParrot pins the values that show up in the transport parameters, so
+	// whatever the caller asked for must be discarded.
+	c := populateConfig(&Config{
+		ChromeParrot:                   true,
+		MaxIdleTimeout:                 time.Hour,
+		InitialStreamReceiveWindow:     1234,
+		InitialConnectionReceiveWindow: 4321,
+		MaxIncomingStreams:             7,
+		MaxIncomingUniStreams:          9,
+		InitialPacketSize:              1350,
+	})
+
+	require.Equal(t, chromeMaxIdleTimeout, c.MaxIdleTimeout)
+	require.EqualValues(t, chromeInitialMaxStreamData, c.InitialStreamReceiveWindow)
+	require.EqualValues(t, chromeInitialMaxData, c.InitialConnectionReceiveWindow)
+	require.EqualValues(t, chromeMaxIncomingStreams, c.MaxIncomingStreams)
+	require.EqualValues(t, chromeMaxIncomingUniStreams, c.MaxIncomingUniStreams)
+	require.EqualValues(t, chromeInitialPacketSize, c.InitialPacketSize)
+
+	// The auto-tuning ceilings must never end up below the starting windows.
+	require.GreaterOrEqual(t, c.MaxStreamReceiveWindow, c.InitialStreamReceiveWindow)
+	require.GreaterOrEqual(t, c.MaxConnectionReceiveWindow, c.InitialConnectionReceiveWindow)
+}
+
+func TestConfigChromeParrotForcesDatagrams(t *testing.T) {
+	// Chrome always advertises max_datagram_frame_size, so ChromeParrot must turn
+	// datagrams on and clear Hysteria's OmitMaxDatagramFrameSize quirk; otherwise
+	// the transport parameter set comes out one short of Chrome's.
+	c := populateConfig(&Config{
+		ChromeParrot:             true,
+		EnableDatagrams:          false,
+		OmitMaxDatagramFrameSize: true,
+	})
+	require.True(t, c.EnableDatagrams)
+	require.False(t, c.OmitMaxDatagramFrameSize)
 }
