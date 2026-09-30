@@ -232,6 +232,7 @@ func (c *utlsQUICConn) ConnectionState() tls.ConnectionState {
 		VerifiedChains:              s.VerifiedChains,
 		SignedCertificateTimestamps: s.SignedCertificateTimestamps,
 		OCSPResponse:                s.OCSPResponse,
+		ECHAccepted:                 s.ECHAccepted,
 	}
 }
 
