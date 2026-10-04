@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quic-go/quic-go"
-	quicproxy "github.com/quic-go/quic-go/integrationtests/tools/proxy"
-	"github.com/quic-go/quic-go/qlog"
-	"github.com/quic-go/quic-go/qlogwriter"
+	"github.com/apernet/quic-go"
+	quicproxy "github.com/apernet/quic-go/integrationtests/tools/proxy"
+	"github.com/apernet/quic-go/qlog"
+	"github.com/apernet/quic-go/qlogwriter"
 
 	"github.com/stretchr/testify/require"
 )

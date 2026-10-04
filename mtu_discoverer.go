@@ -1,13 +1,13 @@
 package quic
 
 import (
-	"github.com/quic-go/quic-go/internal/ackhandler"
-	"github.com/quic-go/quic-go/internal/monotime"
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/utils"
-	"github.com/quic-go/quic-go/internal/wire"
-	"github.com/quic-go/quic-go/qlog"
-	"github.com/quic-go/quic-go/qlogwriter"
+	"github.com/apernet/quic-go/internal/ackhandler"
+	"github.com/apernet/quic-go/internal/monotime"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/utils"
+	"github.com/apernet/quic-go/internal/wire"
+	"github.com/apernet/quic-go/qlog"
+	"github.com/apernet/quic-go/qlogwriter"
 )
 
 const (

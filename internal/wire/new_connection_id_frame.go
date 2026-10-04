@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/quicvarint"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/quicvarint"
 )
 
 // A NewConnectionIDFrame is a NEW_CONNECTION_ID frame

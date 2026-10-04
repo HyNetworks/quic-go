@@ -46,7 +46,7 @@ func (r *RingBuffer[T]) PushBack(t T) {
 // callers might need to check if there are elements in the buffer first.
 func (r *RingBuffer[T]) PopFront() T {
 	if r.Empty() {
-		panic("github.com/quic-go/quic-go/internal/utils/ringbuffer: pop from an empty queue")
+		panic("github.com/apernet/quic-go/internal/utils/ringbuffer: pop from an empty queue")
 	}
 	// Shrink first. The backing storage remains accessible through cap,
 	// and this ordering avoids an extra bounds check.
@@ -65,7 +65,7 @@ func (r *RingBuffer[T]) PopFront() T {
 // callers might need to check if there are elements in the buffer first.
 func (r *RingBuffer[T]) PeekFront() T {
 	if r.Empty() {
-		panic("github.com/quic-go/quic-go/internal/utils/ringbuffer: peek from an empty queue")
+		panic("github.com/apernet/quic-go/internal/utils/ringbuffer: peek from an empty queue")
 	}
 	return r.ring[:cap(r.ring)][r.headPos]
 }

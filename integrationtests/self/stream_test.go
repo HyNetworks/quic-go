@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/quicvarint"
+	"github.com/apernet/quic-go"
+	"github.com/apernet/quic-go/quicvarint"
 
 	"golang.org/x/sync/errgroup"
 

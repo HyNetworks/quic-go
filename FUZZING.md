@@ -42,7 +42,7 @@ The `sed` command rewrites the container paths in `fuzz.cov` so that `go tool co
 To produce a coverage report against a modified local source tree, mount the local checkout when building the coverage fuzzers, the same way you would for reproducers:
 
 ```sh
-python3 infra/helper.py build_fuzzers --sanitizer coverage --mount_path /root/go/src/github.com/quic-go/quic-go quic-go <local_quic_go_dir>
+python3 infra/helper.py build_fuzzers --sanitizer coverage --mount_path /root/go/src/github.com/apernet/quic-go quic-go <local_quic_go_dir>
 ```
 
 ## Reproducing an OSS-Fuzz testcase
@@ -54,6 +54,6 @@ export DOCKER_DEFAULT_PLATFORM=linux/amd64
 export FUZZ_TARGET=<fuzz_target>
 
 python3 infra/helper.py build_image --no-pull quic-go
-python3 infra/helper.py build_fuzzers --sanitizer address --mount_path /root/go/src/github.com/quic-go/quic-go quic-go <local_quic_go_dir>
+python3 infra/helper.py build_fuzzers --sanitizer address --mount_path /root/go/src/github.com/apernet/quic-go quic-go <local_quic_go_dir>
 python3 infra/helper.py reproduce quic-go "$FUZZ_TARGET" <reproducer_file>
 ```

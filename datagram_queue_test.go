@@ -5,8 +5,8 @@ import (
 	"testing"
 	"testing/synctest"
 
-	"github.com/quic-go/quic-go/internal/utils"
-	"github.com/quic-go/quic-go/internal/wire"
+	"github.com/apernet/quic-go/internal/utils"
+	"github.com/apernet/quic-go/internal/wire"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -5,10 +5,10 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/qerr"
-	"github.com/quic-go/quic-go/internal/utils"
-	"github.com/quic-go/quic-go/internal/wire"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/qerr"
+	"github.com/apernet/quic-go/internal/utils"
+	"github.com/apernet/quic-go/internal/wire"
 )
 
 type newConnID struct {
@@ -323,7 +323,7 @@ func (h *connIDManager) IsActiveStatelessResetToken(token protocol.StatelessRese
 // Using the connIDManager after it has been closed can have disastrous effects:
 // If the connection ID is rotated, a new entry would be inserted into the packet handler map,
 // leading to a memory leak of the connection struct.
-// See https://github.com/quic-go/quic-go/pull/4852 for more details.
+// See https://github.com/apernet/quic-go/pull/4852 for more details.
 func (h *connIDManager) assertNotClosed() {
 	if h.closed {
 		panic("connection ID manager is closed")

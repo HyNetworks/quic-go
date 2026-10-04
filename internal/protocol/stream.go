@@ -1,6 +1,6 @@
 package protocol
 
-import "github.com/quic-go/quic-go/quicvarint"
+import "github.com/apernet/quic-go/quicvarint"
 
 // StreamType encodes if this is a unidirectional or bidirectional stream
 type StreamType uint8

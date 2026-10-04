@@ -9,9 +9,9 @@ import (
 	"net/http/httptrace"
 	"time"
 
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3/qlog"
-	"github.com/quic-go/quic-go/qlogwriter"
+	"github.com/apernet/quic-go"
+	"github.com/apernet/quic-go/http3/qlog"
+	"github.com/apernet/quic-go/qlogwriter"
 
 	"github.com/quic-go/qpack"
 )

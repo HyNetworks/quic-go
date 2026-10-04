@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"hash/crc32"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/qerr"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/qerr"
 )
 
 type (

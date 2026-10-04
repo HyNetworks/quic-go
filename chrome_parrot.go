@@ -3,8 +3,8 @@ package quic
 import (
 	"time"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/wire"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/wire"
 )
 
 // Values a Chrome-parroting client pins. Advertising Chrome's transport
