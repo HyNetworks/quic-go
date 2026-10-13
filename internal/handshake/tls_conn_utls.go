@@ -38,9 +38,9 @@ func newUTLSQUICClient(tlsConf *tls.Config) (*utlsQUICConn, error) {
 	spec := chromeQUICClientHelloSpec(tlsConf.NextProtos)
 
 	conn := utls.UQUICClient(&utls.QUICConfig{TLSConfig: uConf}, utls.HelloCustom)
-	if err := conn.ApplyPreset(spec); err != nil {
-		return nil, fmt.Errorf("applying Chrome ClientHello spec: %w", err)
-	}
+	// The spec is applied in Start, after SetTransportParameters has written the
+	// transport parameters into it: newer uTLS versions deep-copy the spec in
+	// ApplyPreset, so changes made to it afterwards would never reach the ClientHello.
 	return &utlsQUICConn{conn: conn, spec: spec}, nil
 }
 
@@ -118,8 +118,13 @@ func signatureSchemesToStd(in []utls.SignatureScheme) []tls.SignatureScheme {
 	return out
 }
 
-func (c *utlsQUICConn) Start(ctx context.Context) error { return c.conn.Start(ctx) }
-func (c *utlsQUICConn) Close() error                    { return c.conn.Close() }
+func (c *utlsQUICConn) Start(ctx context.Context) error {
+	if err := c.conn.ApplyPreset(c.spec); err != nil {
+		return fmt.Errorf("applying Chrome ClientHello spec: %w", err)
+	}
+	return c.conn.Start(ctx)
+}
+func (c *utlsQUICConn) Close() error { return c.conn.Close() }
 
 func (c *utlsQUICConn) HandleData(level tls.QUICEncryptionLevel, data []byte) error {
 	return c.conn.HandleData(utlsEncryptionLevel(level), data)
