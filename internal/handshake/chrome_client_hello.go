@@ -2,10 +2,19 @@ package handshake
 
 import (
 	"bytes"
+	"crypto/fips140"
+	"runtime"
 	"slices"
 
 	utls "github.com/refraction-networking/utls"
+	"golang.org/x/sys/cpu"
 )
+
+// Keep in sync with crypto/tls.hasAESGCMHardwareSupport.
+var hasAESGCMHardwareSupport = runtime.GOARCH == "amd64" && cpu.X86.HasAES && cpu.X86.HasPCLMULQDQ && cpu.X86.HasSSE41 && cpu.X86.HasSSSE3 ||
+	cpu.ARM64.HasAES && cpu.ARM64.HasPMULL ||
+	cpu.S390X.HasAES && cpu.S390X.HasAESCTR && cpu.S390X.HasGHASH ||
+	runtime.GOARCH == "ppc64" || runtime.GOARCH == "ppc64le"
 
 // chromeQUICClientHelloSpec returns the TLS ClientHello Chrome sends over QUIC.
 //
@@ -24,7 +33,7 @@ func chromeQUICClientHelloSpec(alpn []string) *utls.ClientHelloSpec {
 	if len(alpn) == 0 {
 		alpn = []string{"h3"}
 	}
-	return &utls.ClientHelloSpec{
+	spec := &utls.ClientHelloSpec{
 		// No GREASE suite here, unlike the TCP hello.
 		CipherSuites: []uint16{
 			utls.TLS_AES_128_GCM_SHA256,
@@ -78,6 +87,11 @@ func chromeQUICClientHelloSpec(alpn []string) *utls.ClientHelloSpec {
 			&utls.GenericExtension{Id: extensionTrustAnchors, Data: chromeTrustAnchorsData},
 		}),
 	}
+	if !hasAESGCMHardwareSupport && !fips140.Enabled() {
+		copy(spec.CipherSuites[1:], spec.CipherSuites[:2])
+		spec.CipherSuites[0] = utls.TLS_CHACHA20_POLY1305_SHA256
+	}
+	return spec
 }
 
 // extensionTrustAnchors is the TLS trust_anchors extension
