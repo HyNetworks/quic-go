@@ -92,7 +92,7 @@ func TestReaderHandlesEOF(t *testing.T) {
 }
 
 // Regression test: empty reads were being converted to successful
-// reads of a zero value. See https://github.com/quic-go/quic-go/pull/5275.
+// reads of a zero value. See https://github.com/apernet/quic-go/pull/5275.
 func TestReaderHandlesEmptyRead(t *testing.T) {
 	r, w := io.Pipe()
 

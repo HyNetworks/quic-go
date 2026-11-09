@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quic-go/quic-go/http3"
+	"github.com/apernet/quic-go/http3"
 	"github.com/stretchr/testify/require"
 )
 

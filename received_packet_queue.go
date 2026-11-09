@@ -3,8 +3,8 @@ package quic
 import (
 	"sync"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/utils/ringbuffer"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/utils/ringbuffer"
 )
 
 // A sidePacket is a packet received on a Transport other than the one of the active path.

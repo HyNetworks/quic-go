@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/quic-go/quic-go"
-	quicqlog "github.com/quic-go/quic-go/qlog"
-	"github.com/quic-go/quic-go/qlogwriter"
-	"github.com/quic-go/quic-go/testutils/events"
+	"github.com/apernet/quic-go"
+	quicqlog "github.com/apernet/quic-go/qlog"
+	"github.com/apernet/quic-go/qlogwriter"
+	"github.com/apernet/quic-go/testutils/events"
 
 	"github.com/stretchr/testify/require"
 )

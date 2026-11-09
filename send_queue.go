@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/quic-go/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/protocol"
 )
 
 type sender interface {

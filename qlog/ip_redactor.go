@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/netip"
 
-	"github.com/quic-go/quic-go/qlogwriter"
+	"github.com/apernet/quic-go/qlogwriter"
 )
 
 // RedactIPs wraps a QUIC connection tracer to redact endpoint and preferred addresses.

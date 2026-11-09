@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quic-go/quic-go"
-	quicproxy "github.com/quic-go/quic-go/integrationtests/tools/proxy"
-	"github.com/quic-go/quic-go/qlog"
-	"github.com/quic-go/quic-go/qlogwriter"
-	"github.com/quic-go/quic-go/testutils/events"
+	"github.com/apernet/quic-go"
+	quicproxy "github.com/apernet/quic-go/integrationtests/tools/proxy"
+	"github.com/apernet/quic-go/qlog"
+	"github.com/apernet/quic-go/qlogwriter"
+	"github.com/apernet/quic-go/testutils/events"
 
 	"github.com/stretchr/testify/require"
 )
@@ -127,7 +127,7 @@ func TestNATRebinding(t *testing.T) {
 // Probing the new path after a NAT rebinding uses one of the client's connection IDs.
 // Unless the server retires the old connection ID when switching to the new path,
 // it runs out of connection IDs after a few rebindings, and can't switch paths anymore, see
-// https://github.com/quic-go/quic-go/issues/5965.
+// https://github.com/apernet/quic-go/issues/5965.
 func TestNATRebindingRepeated(t *testing.T) {
 	var serverEvents events.Recorder
 	server, err := quic.Listen(

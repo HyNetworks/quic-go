@@ -3,7 +3,7 @@ module test
 go 1.26.0
 
 // The version doesn't matter here, as we're replacing it with the currently checked out code anyway.
-require github.com/quic-go/quic-go v0.21.0
+require github.com/apernet/quic-go v0.21.0
 
 require (
 	github.com/andybalholm/brotli v1.0.6 // indirect
@@ -16,4 +16,4 @@ require (
 	golang.org/x/text v0.40.0 // indirect
 )
 
-replace github.com/quic-go/quic-go => ../../
+replace github.com/apernet/quic-go => ../../

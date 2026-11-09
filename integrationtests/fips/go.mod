@@ -1,9 +1,9 @@
-module github.com/quic-go/quic-go/integrationtests/fips
+module github.com/apernet/quic-go/integrationtests/fips
 
 go 1.26.0
 
 // The version doesn't matter here, as we're replacing it with the currently checked out code anyway.
-require github.com/quic-go/quic-go v0.60.0
+require github.com/apernet/quic-go v0.60.0
 
 require github.com/stretchr/testify v1.12.1
 
@@ -17,4 +17,4 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 )
 
-replace github.com/quic-go/quic-go => ../../
+replace github.com/apernet/quic-go => ../../

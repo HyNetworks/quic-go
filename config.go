@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/quicvarint"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/quicvarint"
 )
 
 // Clone clones a Config.

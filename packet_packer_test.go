@@ -7,18 +7,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quic-go/quic-go/internal/ackhandler"
-	"github.com/quic-go/quic-go/internal/handshake"
-	"github.com/quic-go/quic-go/internal/mocks"
-	mockackhandler "github.com/quic-go/quic-go/internal/mocks/ackhandler"
-	"github.com/quic-go/quic-go/internal/monotime"
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/qerr"
-	"github.com/quic-go/quic-go/internal/utils"
-	"github.com/quic-go/quic-go/internal/wire"
-	"github.com/quic-go/quic-go/qlog"
-	"github.com/quic-go/quic-go/qlogwriter"
-	"github.com/quic-go/quic-go/testutils/events"
+	"github.com/apernet/quic-go/internal/ackhandler"
+	"github.com/apernet/quic-go/internal/handshake"
+	"github.com/apernet/quic-go/internal/mocks"
+	mockackhandler "github.com/apernet/quic-go/internal/mocks/ackhandler"
+	"github.com/apernet/quic-go/internal/monotime"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/qerr"
+	"github.com/apernet/quic-go/internal/utils"
+	"github.com/apernet/quic-go/internal/wire"
+	"github.com/apernet/quic-go/qlog"
+	"github.com/apernet/quic-go/qlogwriter"
+	"github.com/apernet/quic-go/testutils/events"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -543,7 +543,7 @@ func testPackConnectionCloseCoalesced(t *testing.T, pers protocol.Perspective) {
 	}
 }
 
-// Regression test for https://github.com/quic-go/quic-go/issues/5857
+// Regression test for https://github.com/apernet/quic-go/issues/5857
 func TestPackConnectionCloseCoalescedClient1RTT(t *testing.T) {
 	const maxPacketSize protocol.ByteCount = protocol.MaxPacketBufferSize
 	mockCtrl := gomock.NewController(t)

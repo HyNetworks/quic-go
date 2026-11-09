@@ -11,8 +11,8 @@ import (
 	mrand "math/rand/v2"
 	"testing"
 
-	"github.com/quic-go/quic-go/internal/protocol"
-	"github.com/quic-go/quic-go/internal/testdata"
+	"github.com/apernet/quic-go/internal/protocol"
+	"github.com/apernet/quic-go/internal/testdata"
 	"golang.org/x/crypto/cryptobyte"
 
 	"github.com/stretchr/testify/assert"

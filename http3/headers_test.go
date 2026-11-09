@@ -11,8 +11,8 @@ import (
 
 	ossfuzzseeds "github.com/quic-go/go-ossfuzz-seeds"
 	"github.com/quic-go/qpack"
-	"github.com/quic-go/quic-go/http3/qlog"
-	"github.com/quic-go/quic-go/testutils/events"
+	"github.com/apernet/quic-go/http3/qlog"
+	"github.com/apernet/quic-go/testutils/events"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -78,7 +78,7 @@ func TestRequestHeaderParsing(t *testing.T) {
 		scheme string
 	}{
 		{name: "regular path", path: "/foo", scheme: "https"},
-		// see https://github.com/quic-go/quic-go/pull/1898
+		// see https://github.com/apernet/quic-go/pull/1898
 		{name: "path starting with //", path: "//foo", scheme: "https"},
 		{name: "upper-case scheme", path: "/foo", scheme: "HTTPS"},
 	} {
