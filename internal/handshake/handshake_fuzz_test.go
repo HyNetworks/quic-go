@@ -258,16 +258,20 @@ func fuzzRunHandshake(
 		serverTP.MaxAckDelay = protocol.MaxMaxAckDelay + 5
 	}
 
-	client := NewCryptoSetupClient(
+	client, cerr := NewCryptoSetupClient(
 		protocol.ConnectionID{},
 		clientTP,
 		clientConf,
 		enable0RTTClient,
+		false,
 		&utils.RTTStats{},
 		nil,
 		utils.DefaultLogger.WithPrefix("client"),
 		protocol.Version1,
 	)
+	if cerr != nil {
+		t.Fatal(cerr)
+	}
 	if err := client.StartHandshake(context.Background()); err != nil {
 		t.Fatal(err)
 	}

@@ -103,4 +103,6 @@ func (e *DatagramTooLargeError) Is(target error) bool {
 	return ok && e.MaxDatagramPayloadSize == t.MaxDatagramPayloadSize
 }
 
-func (e *DatagramTooLargeError) Error() string { return "DATAGRAM frame too large" }
+func (e *DatagramTooLargeError) Error() string {
+	return fmt.Sprintf("DATAGRAM frame too large (maximum: %d bytes)", e.MaxDatagramPayloadSize)
+}

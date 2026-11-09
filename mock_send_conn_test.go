@@ -191,6 +191,42 @@ func (c *MockSendConnRemoteAddrCall) DoAndReturn(f func() net.Addr) *MockSendCon
 	return c
 }
 
+// SetRemoteAddr mocks base method.
+func (m *MockSendConn) SetRemoteAddr(addr net.Addr) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetRemoteAddr", addr)
+}
+
+// SetRemoteAddr indicates an expected call of SetRemoteAddr.
+func (mr *MockSendConnMockRecorder) SetRemoteAddr(addr any) *MockSendConnSetRemoteAddrCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRemoteAddr", reflect.TypeOf((*MockSendConn)(nil).SetRemoteAddr), addr)
+	return &MockSendConnSetRemoteAddrCall{Call: call}
+}
+
+// MockSendConnSetRemoteAddrCall wrap *gomock.Call
+type MockSendConnSetRemoteAddrCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockSendConnSetRemoteAddrCall) Return() *MockSendConnSetRemoteAddrCall {
+	c.Call = c.Call.Return()
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockSendConnSetRemoteAddrCall) Do(f func(net.Addr)) *MockSendConnSetRemoteAddrCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockSendConnSetRemoteAddrCall) DoAndReturn(f func(net.Addr)) *MockSendConnSetRemoteAddrCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // Write mocks base method.
 func (m *MockSendConn) Write(b []byte, gsoSize uint16, ecn protocol.ECN) error {
 	m.ctrl.T.Helper()

@@ -278,7 +278,7 @@ func FuzzFindSNI(f *testing.F) {
 	addSeedWithECH("quic-go.net", 40)
 
 	f.Fuzz(func(t *testing.T, data []byte, maxSize int) {
-		cs := newInitialCryptoStream(true)
+		cs := newInitialCryptoStream(true, false)
 		if _, err := cs.Write(data); err != nil {
 			return
 		}

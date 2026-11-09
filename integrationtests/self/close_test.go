@@ -187,7 +187,7 @@ func testTransportClose(t *testing.T, conn net.PacketConn, closeFn func(), expec
 
 	errChan := make(chan error, 1)
 	go func() {
-		_, err := tr.Dial(context.Background(), server.LocalAddr(), &tls.Config{}, getQuicConfig(nil))
+		_, err := tr.Dial(context.Background(), server.LocalAddr(), &tls.Config{InsecureSkipVerify: true}, getQuicConfig(nil))
 		errChan <- err
 	}()
 
@@ -212,7 +212,7 @@ func testTransportClose(t *testing.T, conn net.PacketConn, closeFn func(), expec
 	// it's not possible to dial new connections
 	ctx, cancel := context.WithTimeout(context.Background(), scaleDuration(50*time.Millisecond))
 	defer cancel()
-	_, err := tr.Dial(ctx, server.LocalAddr(), &tls.Config{}, getQuicConfig(nil))
+	_, err := tr.Dial(ctx, server.LocalAddr(), &tls.Config{InsecureSkipVerify: true}, getQuicConfig(nil))
 	require.ErrorIs(t, err, quic.ErrTransportClosed)
 	if expectedErr != nil {
 		require.ErrorIs(t, err, expectedErr)

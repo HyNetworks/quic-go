@@ -12,6 +12,7 @@ package mockackhandler
 import (
 	reflect "reflect"
 
+	congestion "github.com/quic-go/quic-go/congestion"
 	ackhandler "github.com/quic-go/quic-go/internal/ackhandler"
 	monotime "github.com/quic-go/quic-go/internal/monotime"
 	protocol "github.com/quic-go/quic-go/internal/protocol"
@@ -561,6 +562,78 @@ func (c *MockSentPacketHandlerSentPacketCall) Do(f func(monotime.Time, protocol.
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockSentPacketHandlerSentPacketCall) DoAndReturn(f func(monotime.Time, protocol.PacketNumber, protocol.PacketNumber, []ackhandler.StreamFrame, []ackhandler.Frame, protocol.EncryptionLevel, protocol.ECN, protocol.ByteCount, bool, bool)) *MockSentPacketHandlerSentPacketCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// SetCongestionControl mocks base method.
+func (m *MockSentPacketHandler) SetCongestionControl(arg0 congestion.CongestionControl) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCongestionControl", arg0)
+}
+
+// SetCongestionControl indicates an expected call of SetCongestionControl.
+func (mr *MockSentPacketHandlerMockRecorder) SetCongestionControl(arg0 any) *MockSentPacketHandlerSetCongestionControlCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCongestionControl", reflect.TypeOf((*MockSentPacketHandler)(nil).SetCongestionControl), arg0)
+	return &MockSentPacketHandlerSetCongestionControlCall{Call: call}
+}
+
+// MockSentPacketHandlerSetCongestionControlCall wrap *gomock.Call
+type MockSentPacketHandlerSetCongestionControlCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockSentPacketHandlerSetCongestionControlCall) Return() *MockSentPacketHandlerSetCongestionControlCall {
+	c.Call = c.Call.Return()
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockSentPacketHandlerSetCongestionControlCall) Do(f func(congestion.CongestionControl)) *MockSentPacketHandlerSetCongestionControlCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockSentPacketHandlerSetCongestionControlCall) DoAndReturn(f func(congestion.CongestionControl)) *MockSentPacketHandlerSetCongestionControlCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// SetLastDatagramPadding mocks base method.
+func (m *MockSentPacketHandler) SetLastDatagramPadding(arg0 protocol.ByteCount) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLastDatagramPadding", arg0)
+}
+
+// SetLastDatagramPadding indicates an expected call of SetLastDatagramPadding.
+func (mr *MockSentPacketHandlerMockRecorder) SetLastDatagramPadding(arg0 any) *MockSentPacketHandlerSetLastDatagramPaddingCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastDatagramPadding", reflect.TypeOf((*MockSentPacketHandler)(nil).SetLastDatagramPadding), arg0)
+	return &MockSentPacketHandlerSetLastDatagramPaddingCall{Call: call}
+}
+
+// MockSentPacketHandlerSetLastDatagramPaddingCall wrap *gomock.Call
+type MockSentPacketHandlerSetLastDatagramPaddingCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockSentPacketHandlerSetLastDatagramPaddingCall) Return() *MockSentPacketHandlerSetLastDatagramPaddingCall {
+	c.Call = c.Call.Return()
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockSentPacketHandlerSetLastDatagramPaddingCall) Do(f func(protocol.ByteCount)) *MockSentPacketHandlerSetLastDatagramPaddingCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockSentPacketHandlerSetLastDatagramPaddingCall) DoAndReturn(f func(protocol.ByteCount)) *MockSentPacketHandlerSetLastDatagramPaddingCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

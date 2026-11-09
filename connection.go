@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/quic-go/quic-go/congestion"
 	"github.com/quic-go/quic-go/internal/ackhandler"
 	"github.com/quic-go/quic-go/internal/handshake"
 	"github.com/quic-go/quic-go/internal/monotime"
@@ -176,6 +177,9 @@ type Conn struct {
 	frameParser   wire.FrameParser
 	packer        packer
 	mtuDiscoverer *mtuFinder // initialized after the first write at the configured Initial size
+	// initialPacketSizeFellBack is set when the first write at the default
+	// Initial size failed with EMSGSIZE and the connection dropped to 1200 bytes.
+	initialPacketSizeFellBack atomic.Bool
 
 	maxPayloadSizeEstimate atomic.Uint32
 
@@ -327,6 +331,7 @@ var newConnection = func(
 		s.conn.capabilities().ECN,
 		s.receivedPacketHandler.IgnorePacketsBelow,
 		s.perspective,
+		false, // servers keep quic-go's 2-byte packet number floor
 		s.qlogger,
 		s.logger,
 	)
@@ -355,8 +360,11 @@ var newConnection = func(
 		RetrySourceConnectionID:   retrySrcConnID,
 		EnableResetStreamAt:       conf.EnableStreamResetPartialDelivery,
 	}
-	if s.config.EnableDatagrams {
+	if s.config.EnableDatagrams && !s.config.OmitMaxDatagramFrameSize {
 		params.MaxDatagramFrameSize = wire.MaxDatagramSize
+		if s.config.MaxDatagramFrameSize != 0 {
+			params.MaxDatagramFrameSize = protocol.ByteCount(s.config.MaxDatagramFrameSize)
+		}
 	} else {
 		params.MaxDatagramFrameSize = protocol.InvalidByteCount
 	}
@@ -376,7 +384,7 @@ var newConnection = func(
 		s.version,
 	)
 	s.cryptoStreamHandler = cs
-	s.packer = newPacketPacker(srcConnID, s.connIDManager.Get, s.initialStream, s.handshakeStream, s.sentPacketHandler, s.retransmissionQueue, cs, s.framer, &s.receivedPacketHandler, s.datagramQueue, s.perspective, s.qlogger)
+	s.packer = newPacketPacker(srcConnID, s.connIDManager.Get, s.initialStream, s.handshakeStream, s.sentPacketHandler, s.retransmissionQueue, cs, s.framer, &s.receivedPacketHandler, s.datagramQueue, s.perspective, s.qlogger, false)
 	s.unpacker = newPacketUnpacker(cs, s.srcConnIDLen)
 	s.cryptoStreamManager = newCryptoStreamManager(s.initialStream, s.handshakeStream, s.oneRTTStream)
 	return w
@@ -399,7 +407,7 @@ var newClientConnection = func(
 	qlogTrace qlogwriter.Trace,
 	logger utils.Logger,
 	v protocol.Version,
-) *wrappedConn {
+) (*wrappedConn, error) {
 	s := &Conn{
 		conn:                conn,
 		config:              conf,
@@ -465,6 +473,7 @@ var newClientConnection = func(
 		s.conn.capabilities().ECN,
 		s.receivedPacketHandler.IgnorePacketsBelow,
 		s.perspective,
+		s.config.ChromeParrot,
 		s.qlogger,
 		s.logger,
 	)
@@ -490,38 +499,48 @@ var newClientConnection = func(
 		InitialSourceConnectionID: srcConnID,
 		EnableResetStreamAt:       conf.EnableStreamResetPartialDelivery,
 	}
-	if s.config.EnableDatagrams {
+	if s.config.EnableDatagrams && !s.config.OmitMaxDatagramFrameSize {
 		params.MaxDatagramFrameSize = wire.MaxDatagramSize
+		if s.config.MaxDatagramFrameSize != 0 {
+			params.MaxDatagramFrameSize = protocol.ByteCount(s.config.MaxDatagramFrameSize)
+		}
 	} else {
 		params.MaxDatagramFrameSize = protocol.InvalidByteCount
+	}
+	if s.config.ChromeParrot {
+		chromeParrotTransportParameters(params)
 	}
 	if s.qlogger != nil {
 		s.qlogTransportParameters(params, protocol.PerspectiveClient)
 	}
-	cs := handshake.NewCryptoSetupClient(
+	cs, err := handshake.NewCryptoSetupClient(
 		destConnID,
 		params,
 		tlsConf,
 		enable0RTT,
+		s.config.ChromeParrot,
 		s.rttStats,
 		s.qlogger,
 		logger,
 		s.version,
 	)
+	if err != nil {
+		return nil, err
+	}
 	s.cryptoStreamHandler = cs
 	s.cryptoStreamManager = newCryptoStreamManager(s.initialStream, s.handshakeStream, oneRTTStream)
 	s.unpacker = newPacketUnpacker(cs, s.srcConnIDLen)
-	s.packer = newPacketPacker(srcConnID, s.connIDManager.Get, s.initialStream, s.handshakeStream, s.sentPacketHandler, s.retransmissionQueue, cs, s.framer, &s.receivedPacketHandler, s.datagramQueue, s.perspective, s.qlogger)
+	s.packer = newPacketPacker(srcConnID, s.connIDManager.Get, s.initialStream, s.handshakeStream, s.sentPacketHandler, s.retransmissionQueue, cs, s.framer, &s.receivedPacketHandler, s.datagramQueue, s.perspective, s.qlogger, s.config.ChromeParrot)
 	if token != nil {
 		s.packer.SetToken(token.data)
 	}
-	return w
+	return w, nil
 }
 
 // r is the pathReceiver for the Transport that the connection was dialed or accepted on.
 func (c *Conn) preSetup(r *pathReceiver) {
 	c.largestRcvdAppData = protocol.InvalidPacketNumber
-	c.initialStream = newInitialCryptoStream(c.perspective == protocol.PerspectiveClient)
+	c.initialStream = newInitialCryptoStream(c.perspective == protocol.PerspectiveClient, c.config.ChromeParrot)
 	c.handshakeStream = newCryptoStream()
 	c.sendQueue = newSendQueue(c.conn)
 	c.retransmissionQueue = newRetransmissionQueue()
@@ -769,7 +788,17 @@ func (c *Conn) Context() context.Context {
 }
 
 func (c *Conn) supportsDatagrams() bool {
-	return c.peerParams.MaxDatagramFrameSize > 0
+	return c.peerMaxDatagramFrameSize() > 0
+}
+
+func (c *Conn) peerMaxDatagramFrameSize() protocol.ByteCount {
+	if c.peerParams.MaxDatagramFrameSize > 0 {
+		return c.peerParams.MaxDatagramFrameSize
+	}
+	if c.config.EnableDatagrams && c.config.AssumePeerMaxDatagramFrameSize > 0 {
+		return protocol.ByteCount(c.config.AssumePeerMaxDatagramFrameSize)
+	}
+	return protocol.InvalidByteCount
 }
 
 // ConnectionState returns basic details about the QUIC connection.
@@ -1299,6 +1328,11 @@ func (c *Conn) handleShortHeaderPacket(
 		if err := c.handlePathChallengeFrame(pathChallenge, path, p.rcvTime); err != nil {
 			return true, err
 		}
+	}
+	if c.config.DisablePathManager {
+		// for hysteria2 port hopping, direct change remote address without connection migration logic
+		c.conn.ChangeRemoteAddr(p.remoteAddr, p.info)
+		return true, nil
 	}
 
 	if !checkPath {
@@ -2101,6 +2135,10 @@ func (c *Conn) handleHandshakeEvents(now monotime.Time) error {
 			case handshake.EventReceived1RTTReadKeys:
 				err = c.cryptoStreamManager.Finish(protocol.EncryptionHandshake)
 			}
+			// New keys mean the encryption level we send at is about to change, at
+			// which point the imitated client sizes the packet number against the
+			// full datagram again rather than the room left by the last one.
+			c.sentPacketHandler.SetLastDatagramPadding(0)
 			// queue all previously undecryptable packets
 			c.undecryptablePacketsToProcess = append(c.undecryptablePacketsToProcess, c.undecryptablePackets...)
 			c.undecryptablePackets = nil
@@ -2935,6 +2973,7 @@ func (c *Conn) sendPackedCoalescedPacket(packet *coalescedPacket, ecn protocol.E
 	initialPacketSize := c.config.initialPacketSize()
 	if packetSize >= initialPacketSize {
 		if err != nil {
+			c.initialPacketSizeFellBack.Store(true)
 			initialPacketSize = protocol.MinInitialPacketSize
 			c.maxPayloadSizeEstimate.Store(uint32(estimateMaxPayloadSize(protocol.MinInitialPacketSize)))
 			c.sentPacketHandler.SetMaxDatagramSize(protocol.MinInitialPacketSize)
@@ -3147,10 +3186,11 @@ func (c *Conn) SendDatagram(p []byte) error {
 	}
 
 	f := &wire.DatagramFrame{DataLenPresent: true}
+	maxDatagramFrameSize := c.peerMaxDatagramFrameSize()
 	// The payload size estimate is conservative.
 	// Under many circumstances we could send a few more bytes.
 	maxDataLen := min(
-		f.MaxDataLen(c.peerParams.MaxDatagramFrameSize, c.version),
+		f.MaxDataLen(maxDatagramFrameSize, c.version),
 		protocol.ByteCount(c.maxPayloadSizeEstimate.Load()),
 	)
 	if protocol.ByteCount(len(p)) > maxDataLen {
@@ -3262,4 +3302,37 @@ func (c *Conn) NextConnection(ctx context.Context) (*Conn, error) {
 // connection ID length), and the size of the encryption tag.
 func estimateMaxPayloadSize(mtu protocol.ByteCount) protocol.ByteCount {
 	return mtu - 1 /* type byte */ - 20 /* maximum connection ID length */ - 16 /* tag size */
+}
+
+// SetCongestionControl replace the current congestion control algorithm with a new one.
+func (c *Conn) SetCongestionControl(cc congestion.CongestionControl) {
+	c.sentPacketHandler.SetCongestionControl(cc)
+}
+
+// InitialPacketSize returns the datagram size the connection starts out with,
+// before path MTU discovery raises it. This is the value the connection's own
+// congestion controller is seeded with, and it is not always the package
+// default: options that make the connection start smaller lower it too, as
+// does the 1200-byte fallback taken when the first write at the default size
+// fails with EMSGSIZE.
+//
+// A controller installed with SetCongestionControl must be seeded with this,
+// not with the package default. Seeding it high instead breaks as soon as path
+// MTU discovery reports a size between the two, which the connection sees as an
+// increase but the controller sees as a decrease.
+func (c *Conn) InitialPacketSize() congestion.ByteCount {
+	if c.initialPacketSizeFellBack.Load() {
+		return congestion.MinInitialPacketSize
+	}
+	return congestion.ByteCount(c.config.initialPacketSize())
+}
+
+// SetRemoteAddr Replace the current remote addr with a new one
+func (c *Conn) SetRemoteAddr(addr net.Addr) {
+	c.conn.SetRemoteAddr(addr)
+}
+
+// Config Return current config
+func (c *Conn) Config() *Config {
+	return c.config
 }

@@ -180,7 +180,7 @@ func newClientTestConnection(
 	if config == nil {
 		config = &Config{DisablePathMTUDiscovery: true}
 	}
-	conn := newClientConnection(
+	conn, err := newClientConnection(
 		context.Background(),
 		sendConn,
 		connRunner,
@@ -197,6 +197,7 @@ func newClientTestConnection(
 		utils.DefaultLogger,
 		protocol.Version1,
 	)
+	require.NoError(t, err)
 	require.Nil(t, conn.testHooks)
 	conn.packer = packer
 	for _, opt := range opts {
@@ -1877,6 +1878,7 @@ func TestConnectionInitialPacketSizeFallback(t *testing.T) {
 			buf := getPacketBuffer()
 			buf.Data = buf.Data[:tc.conn.config.initialPacketSize()]
 			require.Nil(t, tc.conn.mtuDiscoverer)
+			require.EqualValues(t, tc.conn.config.initialPacketSize(), tc.conn.InitialPacketSize())
 			packet := &coalescedPacket{buffer: buf, longHdrPackets: []*longHeaderPacket{{
 				header: &wire.ExtendedHeader{Header: wire.Header{Type: protocol.PacketTypeInitial}},
 				length: buf.Len(),
@@ -1891,6 +1893,8 @@ func TestConnectionInitialPacketSizeFallback(t *testing.T) {
 			require.Equal(t, protocol.ByteCount(protocol.MinInitialPacketSize), tc.conn.maxPacketSize())
 			require.Equal(t, uint32(estimateMaxPayloadSize(protocol.MinInitialPacketSize)), tc.conn.maxPayloadSizeEstimate.Load())
 			require.Zero(t, tc.conn.config.InitialPacketSize)
+			// a congestion controller installed now must be seeded with the reduced size
+			require.EqualValues(t, protocol.MinInitialPacketSize, tc.conn.InitialPacketSize())
 
 			tc.conn.peerParams = &wire.TransportParameters{MaxUDPPayloadSize: 1300, ActiveConnectionIDLimit: 2}
 			tc.conn.applyTransportParameters()

@@ -22,7 +22,7 @@ func TestBasicConn(t *testing.T) {
 		return copy(b, data), addr, nil
 	})
 
-	conn, err := wrapConn(c)
+	conn, err := wrapConn(c, false)
 	require.NoError(t, err)
 	p, err := conn.ReadPacket()
 	require.NoError(t, err)

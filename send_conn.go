@@ -15,6 +15,7 @@ type sendConn interface {
 	Close() error
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
+	SetRemoteAddr(addr net.Addr)
 	ChangeRemoteAddr(addr net.Addr, info packetInfo)
 
 	capabilities() connCapabilities
@@ -118,6 +119,17 @@ func (c *sconn) ChangeRemoteAddr(addr net.Addr, info packetInfo) {
 		addr: addr,
 		oob:  info.OOB(),
 	})
+}
+
+func (c *sconn) SetRemoteAddr(addr net.Addr) {
+	for {
+		ai := c.remoteAddrInfo.Load()                    // load the current value of the pointer, so we can swap it
+		newAi := *ai                                     // make a copy, so we can swap the pointer
+		newAi.addr = addr                                // update the address
+		if c.remoteAddrInfo.CompareAndSwap(ai, &newAi) { // if the pointer was swapped, we're done
+			break
+		}
+	}
 }
 
 func (c *sconn) RemoteAddr() net.Addr { return c.remoteAddrInfo.Load().addr }

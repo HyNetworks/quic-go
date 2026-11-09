@@ -56,7 +56,7 @@ type oobConn struct {
 
 var _ rawConn = &oobConn{}
 
-func newConn(c OOBCapablePacketConn, supportsDF bool) (*oobConn, error) {
+func newConn(c OOBCapablePacketConn, supportsDF bool, disableGSO bool) (*oobConn, error) {
 	rawConn, err := c.SyscallConn()
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func newConn(c OOBCapablePacketConn, supportsDF bool) (*oobConn, error) {
 		readPos:              batchSize,
 		cap: connCapabilities{
 			DF:  supportsDF,
-			GSO: isGSOEnabled(rawConn),
+			GSO: !disableGSO && isGSOEnabled(rawConn),
 			ECN: isECNEnabled(),
 		},
 	}
@@ -231,7 +231,13 @@ func (c *oobConn) WritePacket(b []byte, addr net.Addr, packetInfoOOB []byte, gso
 		if !c.capabilities().GSO {
 			panic("GSO disabled")
 		}
-		oob = appendUDPSegmentSizeMsg(oob, gsoSize)
+		// Only request UDP GSO when the payload will actually be segmented.
+		// Some drivers/devices misbehave when UDP_SEGMENT is set for an effectively
+		// single-segment send (segment_size >= payload length). This mirrors quinn-udp's
+		// behavior.
+		if len(b) > int(gsoSize) {
+			oob = appendUDPSegmentSizeMsg(oob, gsoSize)
+		}
 	}
 	if ecn != protocol.ECNUnsupported {
 		if !c.capabilities().ECN {

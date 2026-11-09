@@ -39,12 +39,20 @@ type testPacketPacker struct {
 	Recorder            *events.Recorder
 }
 
-func newTestPacketPacker(t *testing.T, mockCtrl *gomock.Controller, pers protocol.Perspective) *testPacketPacker {
+// chaosProtection is optional so existing callers stay unchanged; only the
+// Chrome chaos protection tests pass it.
+func newTestPacketPacker(t *testing.T, mockCtrl *gomock.Controller, pers protocol.Perspective, chaosProtection ...bool) *testPacketPacker {
+	var chaos bool
+	if len(chaosProtection) > 0 {
+		chaos = chaosProtection[0]
+	}
 	destConnID := protocol.ParseConnectionID([]byte{1, 2, 3, 4})
 	require.Equal(t, testPackerConnIDLen, destConnID.Len())
-	initialStream := newInitialCryptoStream(pers == protocol.PerspectiveClient)
+	initialStream := newInitialCryptoStream(pers == protocol.PerspectiveClient, chaos)
 	handshakeStream := newCryptoStream()
 	pnManager := mockackhandler.NewMockSentPacketHandler(mockCtrl)
+	// Reported for every datagram packed; only the packet number length depends on it.
+	pnManager.EXPECT().SetLastDatagramPadding(gomock.Any()).AnyTimes()
 	framer := NewMockFrameSource(mockCtrl)
 	ackFramer := NewMockAckFrameSource(mockCtrl)
 	sealingManager := NewMockSealingManager(mockCtrl)
@@ -74,6 +82,7 @@ func newTestPacketPacker(t *testing.T, mockCtrl *gomock.Controller, pers protoco
 			datagramQueue,
 			pers,
 			qlogger,
+			chaos,
 		),
 	}
 }
@@ -796,6 +805,46 @@ func TestPackLargeDatagramFrame(t *testing.T) {
 	require.Equal(t, []qlogwriter.Event{qlog.DatagramDropped{
 		Direction: qlog.DirectionSending,
 		Raw:       qlog.RawInfo{Length: len(f.Data), PayloadLength: qlog.OmitLength},
+		Trigger:   "too_large",
+	}}, tp.Recorder.Events(qlog.DatagramDropped{}))
+}
+
+// A DATAGRAM frame that never fits next to the ACK must not block the
+// DATAGRAM frames queued behind it forever.
+func TestPackLargeDatagramFrameDroppedAfterMaxPeekTimes(t *testing.T) {
+	const maxPacketSize = 1000
+	mockCtrl := gomock.NewController(t)
+	tp := newTestPacketPacker(t, mockCtrl, protocol.PerspectiveServer)
+	large := &wire.DatagramFrame{DataLenPresent: true, Data: make([]byte, maxPacketSize-10)}
+	small := &wire.DatagramFrame{DataLenPresent: true, Data: []byte("foobar")}
+	tp.datagramQueue.Add(large)
+	tp.datagramQueue.Add(small)
+
+	pack := func(pn protocol.PacketNumber) shortHeaderPacket {
+		t.Helper()
+		tp.ackFramer.EXPECT().GetAckFrame(protocol.Encryption1RTT, gomock.Any(), true).Return(&wire.AckFrame{AckRanges: []wire.AckRange{{Largest: 100}}})
+		tp.pnManager.EXPECT().PeekPacketNumber(protocol.PacketNumberSpaceAppData).Return(pn, protocol.PacketNumberLen2)
+		tp.pnManager.EXPECT().PopPacketNumber(protocol.PacketNumberSpaceAppData).Return(pn)
+		tp.sealingManager.EXPECT().Get1RTTSealer().Return(newMockShortHeaderSealer(mockCtrl), nil)
+		tp.framer.EXPECT().HasData()
+		p, err := tp.packer.AppendPacket(getPacketBuffer(), maxPacketSize, monotime.Now(), protocol.Version1)
+		require.NoError(t, err)
+		require.NotNil(t, p.Ack)
+		return p
+	}
+
+	for i := range DatagramFrameMaxPeekTimes {
+		p := pack(protocol.PacketNumber(i))
+		require.Empty(t, p.Frames)
+		require.Equal(t, large, tp.datagramQueue.Peek())
+	}
+	// the large frame is dropped, and the one queued behind it goes out in its place
+	p := pack(protocol.PacketNumber(DatagramFrameMaxPeekTimes))
+	require.Equal(t, []ackhandler.Frame{{Frame: &wire.DatagramFrame{Data: []byte("foobar")}}}, p.Frames)
+	require.Nil(t, tp.datagramQueue.Peek())
+	require.Equal(t, []qlogwriter.Event{qlog.DatagramDropped{
+		Direction: qlog.DirectionSending,
+		Raw:       qlog.RawInfo{Length: len(large.Data), PayloadLength: qlog.OmitLength},
 		Trigger:   "too_large",
 	}}, tp.Recorder.Events(qlog.DatagramDropped{}))
 }
